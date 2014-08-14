@@ -250,11 +250,19 @@ if(is_array($arFilesRootDir)){
 // Get dirs & files
 if(is_array($arDirsRootDir)){
     foreach($arDirsRootDir as $elList){
-        @mkdir($elList);
-        @chmod($elList,0777);
-        @chdir($elList);
+
         #ftp_chdir($ftp_conn, $dir_remote."/".$elList);
-        FTP::download($dir_local, $dir_remote."/".$elList, $ftp_conn);
+        if(is_dir($dir_local.$dir_remote."/".$elList)){
+            echo "<br >".$dir_local.$dir_remote."/".$elList." already exists";
+        }
+        else{
+            @mkdir($elList);
+            @chmod($elList,0777);
+            @chdir($elList);
+            echo "<br >".$dir_local.$dir_remote."/".$elList." created now";
+            FTP::download($dir_local, $dir_remote."/".$elList, $ftp_conn);
+        }
+        #
         #die();
     }
 }
