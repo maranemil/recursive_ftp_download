@@ -62,7 +62,7 @@ class FTP
         }
 
         $contents = ftp_nlist($ftp_conn, ".");
-        if(is_array($contents)){
+        if(is_array($contents) && count($contents)<40 ){
             foreach ($contents as $file) {
 
                 if ($file == '.' || $file == '..')
