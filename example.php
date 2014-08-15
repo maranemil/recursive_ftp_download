@@ -20,7 +20,8 @@ max_input_nesting_level = 64 ; Maximum input variable nesting level
 memory_limit = 128M           ; Maximum amount of memory a script may consume (128MB by default)
 */
 
-include('ftp_wrapper.php');
+include("libs/ftp_wrapper.php");
+include("libs/zip_wrapper.php");
 
 ?>
 <?php
@@ -38,12 +39,14 @@ $callStartTime = microtime(true);
 # Linear connection info for connecting to FTP
  
 # set up basic connection
+$jobName       = "Abc5Se";
 $ftp_server 	= "ftp.servername";
 $ftp_user    	= "username";
 $ftp_pass     	= "password";
 
 $dir_remote 	= "/dir/where/remote/folder/is"; // ftp remote folder
 $dir_local 		= "/your/absolute/path/to/script/public_html/is";  // local folder
+$dir_reset      = true;
 
 $dir_exclude = array(
     "custom_files",
@@ -54,17 +57,22 @@ $dir_exclude = array(
     "js"
 );
 
-// unlink - rmdir
-FTP::rrmdir($dir_local.$dir_remote."/");
-
+if($dir_reset){
+    // Remove Old content from Project if exists:: unlink/rmdir
+    $ftpIns = new FTP();
+    $ftpIns->rrmdir($dir_local.$dir_remote."/");
+}
 ////////////////////////////////////////////////////////////////
 //
 // Prepare local folder for Download
 //
 ////////////////////////////////////////////////////////////////
 
-$local_dir_path = explode("/",$dir_remote);
+// Change directory to Project Path on your drive
+chdir($dir_local);
 
+// Start creating root folders
+$local_dir_path = explode("/",$dir_remote);
 if(is_array($local_dir_path)){
     $ckdir = $local_dir_path[1];
     $iterator = 0;
@@ -82,18 +90,15 @@ if(is_array($local_dir_path)){
             }
             else{
                 chdir($subFtpDir);
-                #echo "<br>".$subFtpDir."::: Exists!";
             }
             $iterator++;
         }
-        #chdir($subFtpDir);
-        #chdir("..");
     }
 }
 
 ////////////////////////////////////////////////////////////////
 //
-// Start download
+// Start to download from FTP
 //
 ////////////////////////////////////////////////////////////////
 
@@ -124,11 +129,12 @@ if (ftp_chdir($ftp_conn, $dir_remote)) {
 var_dump(ftp_rawlist($ftp_conn, $dir_remote));
 #die();
 
-// get contents of the current directory
+// get contents of the current ftp directory
 $arrNList = ftp_nlist($ftp_conn, $dir_remote);
 
 // output $contents
 #var_dump($arrNList);
+// Create array list with root files and folders
 foreach($arrNList as $elList){
     if ($elList == '.' || $elList == '..' || in_array($elList, $dir_exclude))
         continue;
@@ -141,14 +147,14 @@ foreach($arrNList as $elList){
     }
 }
 
-// Get root files
+// Get root files from FTP
 if(is_array($arFilesRootDir)){
     foreach($arFilesRootDir as $rootFile){
         @ftp_get($ftp_conn, $dir_local . $dir_remote . "/" . $rootFile, $rootFile, FTP_BINARY);
     }
 }
 
-// Get dirs & files
+// Get dirs & files from FTP
 if(is_array($arDirsRootDir)){
     foreach($arDirsRootDir as $elList){
 
@@ -161,10 +167,8 @@ if(is_array($arDirsRootDir)){
             @chmod($elList,0777);
             @chdir($elList);
             echo "<br >".$dir_local.$dir_remote."/".$elList." created now";
-            FTP::download($dir_local, $dir_remote."/".$elList, $ftp_conn);
+            $ftpIns->download($dir_local, $dir_remote."/".$elList, $ftp_conn);
         }
-        #
-        #die();
     }
 }
 
@@ -178,5 +182,13 @@ $callTime = $callEndTime - $callStartTime;
 echo '<br/>Call time to include file was ' , sprintf('%.4f',$callTime) , " seconds" ;
 echo '<br/>Call time to include file was ' , round(sprintf('%.4f',$callTime)/60) , " min" ;
 
+// Make a zip of local copy folder
+$zipIns = new HZip();
+$zipIns->zipDir($dir_local.$dir_remote, $dir_local.'/'.$jobName.'_'.date("YmdHis").'.zip'); // in - out
+echo '<br/>'.$jobName.'.zip Ready!';
+
+// Remove local copy of files
+#$ftpIns = new FTP();
+$ftpIns->rrmdir($dir_local.$dir_remote."/");
 
 ?>

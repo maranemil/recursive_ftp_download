@@ -22,7 +22,7 @@ class FTP
      * @return null
      */
 
-    public static function download($local_dir, $remote_dir, $ftp_conn)
+    public function download($local_dir, $remote_dir, $ftp_conn)
     {
         if ($remote_dir != ".") {
             if (@ftp_chdir($ftp_conn, $remote_dir) == false) {
@@ -56,7 +56,7 @@ class FTP
         }
 
         $contents = ftp_nlist($ftp_conn, ".");
-        if(is_array($contents) && count($contents)<40 ){
+        if(is_array($contents) && count($contents)<99){
             foreach ($contents as $file) {
 
                 if ($file == '.' || $file == '..')
@@ -64,10 +64,10 @@ class FTP
 
                 if (@ftp_chdir($ftp_conn, $file)) {
                     ftp_chdir($ftp_conn, "..");
-                    FTP::download($local_dir . $remote_dir . "/", $file, $ftp_conn);
+                    $this->download($local_dir . $remote_dir . "/", $file, $ftp_conn);
                 } else {
                     #echo "Here is a file:". $local_dir.$remote_dir."/".$file. "<br >";
-                    #if (!is_file($local_dir . $remote_dir . "/" . $file) && stristr($file,".php") ) {
+                    #if (!is_file($local_dir . $remote_dir . "/" . $file) && !stristr($file,".xml") ) {
                     if (!is_file($local_dir . $remote_dir . "/" . $file) ) {
                         // download server file // In der folgenden Zeile kommt die Fehlermeldung:
                         // FTP_ASCII oder FTP_BINARY
@@ -95,24 +95,24 @@ class FTP
     /**
      * @param $dir
      *
-     *  holger1 at NOSPAM zentralplan dot de
+     *  holger1 at NOSPAMzentralplan dot de ¶
      *  4 years ago
      *  Another simple way to recursively delete a directory that is not empty:
      */
 
-    function rrmdir($dir) {
+    public function rrmdir($dir) {
         if (is_dir($dir)) {
             $objects = scandir($dir);
             foreach ($objects as $object) {
                 if ($object != "." && $object != "..") {
-                    if (filetype($dir."/".$object) == "dir") rrmdir($dir."/".$object); else unlink($dir."/".$object);
+                    if (filetype($dir."/".$object) == "dir") $this->rrmdir($dir."/".$object);
+                    else unlink($dir."/".$object);
                 }
             }
             reset($objects);
             rmdir($dir);
         }
     }
-
 
 }
 
